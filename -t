@@ -1,0 +1,48 @@
+Sending build context to Docker daemon  245.2MB
+Step 1/16 : ARG java_image_tag=8-jre-slim
+Step 2/16 : FROM openjdk:${java_image_tag}
+ ---> 21a3c44ee1bb
+Step 3/16 : ARG spark_uid=185
+ ---> Using cache
+ ---> a28d23824beb
+Step 4/16 : RUN set -ex &&     sed -i 's/http:\/\/deb.\(.*\)/https:\/\/deb.\1/g' /etc/apt/sources.list &&     apt-get update &&     ln -s /lib /lib64 &&     apt install -y bash tini libc6 libpam-modules krb5-user libnss3 &&     mkdir -p /opt/spark &&     mkdir -p /opt/spark/examples &&     mkdir -p /opt/spark/work-dir &&     touch /opt/spark/RELEASE &&     rm /bin/sh &&     ln -sv /bin/bash /bin/sh &&     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su &&     chgrp root /etc/passwd && chmod ug+rw /etc/passwd &&     rm -rf /var/cache/apt/*
+ ---> Using cache
+ ---> 9af2ac181754
+Step 5/16 : COPY jars /opt/spark/jars
+ ---> Using cache
+ ---> 426f0eb004a1
+Step 6/16 : COPY bin /opt/spark/bin
+ ---> Using cache
+ ---> fdd1efd7d8a6
+Step 7/16 : COPY sbin /opt/spark/sbin
+ ---> Using cache
+ ---> 832a10b486cd
+Step 8/16 : COPY kubernetes/dockerfiles/spark/entrypoint.sh /opt/
+ ---> Using cache
+ ---> fbfb8904b393
+Step 9/16 : COPY examples /opt/spark/examples
+ ---> Using cache
+ ---> 269188ead19b
+Step 10/16 : COPY kubernetes/tests /opt/spark/tests
+ ---> Using cache
+ ---> 01e2abe4822b
+Step 11/16 : COPY data /opt/spark/data
+ ---> Using cache
+ ---> 3410990a6a49
+Step 12/16 : ENV SPARK_HOME /opt/spark
+ ---> Using cache
+ ---> c1c92ab9a208
+Step 13/16 : WORKDIR /opt/spark/work-dir
+ ---> Using cache
+ ---> 3e2e6c906912
+Step 14/16 : RUN chmod g+w /opt/spark/work-dir
+ ---> Using cache
+ ---> 9c99eeb1e012
+Step 15/16 : ENTRYPOINT [ "/opt/entrypoint.sh" ]
+ ---> Using cache
+ ---> 852fbc38831a
+Step 16/16 : USER ${spark_uid}
+ ---> Using cache
+ ---> 6a38d68ffe26
+Successfully built 6a38d68ffe26
+Successfully tagged spark-on-k8s/spark:latest
