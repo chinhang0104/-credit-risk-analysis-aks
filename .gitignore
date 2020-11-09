@@ -102,5 +102,3 @@ ENV/
 
 secrets/
 spark/
-
-deploy-airflow.sh

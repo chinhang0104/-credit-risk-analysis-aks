@@ -29,13 +29,53 @@ submit_example_pyspark_job:
 	# upload the spark job file to azure storage
 	az storage blob upload --account-name msbd5003storage --container-name sparkjobs --file spark_cluster/jobs/example.py --name example.py
 	
-	./spark-submit-aks.sh
+	# delete previous pod
+	# kubectl delete pods example-driver
+	
+	# spark submit
+	spark/bin/spark-submit \
+	--master k8s://https://msbd5003-aks-dns-1ede652a.hcp.eastus.azmk8s.io:443 \
+	--deploy-mode cluster \
+	--name example \
+	--conf spark.kubernetes.driver.pod.name=example-driver \
+	--conf spark.executor.instances=2 \
+	--conf spark.kubernetes.driver.request.cores=1 \
+	--conf spark.kubernetes.driver.limit.cores=1 \
+	--conf spark.kubernetes.executor.request.cores=1 \
+	--conf spark.kubernetes.executor.limit.cores=1 \
+	--conf spark.kubernetes.container.image=msbd5003registry.azurecr.io/msbd5003-pyspark:latest \
+	--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
+	--conf spark.kubernetes.report.interval=10s \
+	https://msbd5003storage.blob.core.windows.net/sparkjobs/example.py
+	
+	# Get all logs
+	kubectl logs example-driver
+
+	echo "=========================================================="
+	echo "Relavent Logs:"
+	echo "=========================================================="
+
+	# Get relavent logs
+	kubectl logs example-driver | grep "INFO __main__:"
 
 ## Start of Airflos
 # https://docs.bitnami.com/tutorials/deploy-apache-airflow-azure-postgresql-redis/
 deploy_airflow:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
-	./deploy-airflow.sh
+	helm upgrade airflow-aks bitnami/airflow \
+	--set airflow.loadExamples=false \
+	--set airflow.baseUrl=http://msbd5003 \
+	--set postgresql.enabled=false \
+	--set redis.enabled=false \
+	--set externalDatabase.host=msbd5003-postgres.postgres.database.azure.com \
+	--set externalDatabase.user=msbd5003@msbd5003-postgres \
+	--set externalDatabase.database=airflow \
+	--set externalDatabase.existingSecret=airflow-secrets \
+	--set externalDatabase.port=5432 \
+	--set externalRedis.host=msbd5003-redis.redis.cache.windows.net \
+	--set externalRedis.port=6379 \
+	--set externalRedis.existingSecret=airflow-secrets \
+	--set airflow.auth.existingSecret=airflow-secrets
 
 
 proxy_airflow:
