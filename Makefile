@@ -31,8 +31,18 @@ submit_example_pyspark_job:
 	
 	./spark-submit-aks.sh
 
+## Start of Airflos
+# https://docs.bitnami.com/tutorials/deploy-apache-airflow-azure-postgresql-redis/
+deploy_airflow:
+	helm repo add bitnami https://charts.bitnami.com/bitnami
+	./deploy-airflow.sh
 
-# airflow deployment
+
+proxy_airflow:
+	 kubectl port-forward --namespace default svc/airflow-aks 8091:8080
+
+
+## End of Airflow
 
 # airflow submits pyspark job:
 # https://campus.datacamp.com/courses/building-data-engineering-pipelines-in-python/managing-and-orchestrating-a-workflow?ex=8
@@ -43,3 +53,5 @@ submit_example_pyspark_job:
 # spark streaming
 # https://stackoverflow.com/questions/54785519/using-airflow-to-run-spark-streaming-jobs
 # figure out how to have spark streaming in production
+
+# kubectl delete pods --field-selector status.phase=Failed
