@@ -41,7 +41,6 @@ deploy_airflow:
 proxy_airflow:
 	 kubectl port-forward --namespace default svc/airflow-aks 8091:8080
 
-
 ## End of Airflow
 
 # airflow submits pyspark job:
