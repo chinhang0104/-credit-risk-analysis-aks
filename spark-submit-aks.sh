@@ -8,11 +8,16 @@ spark/bin/spark-submit \
 --name example \
 --conf spark.kubernetes.driver.pod.name=example-driver \
 --conf spark.executor.instances=2 \
---conf spark.kubernetes.container.image=msbd5003registry.azurecr.io/pyspark-on-k8s:v3.0.1 \
+--conf spark.kubernetes.driver.request.cores=1 \
+--conf spark.kubernetes.driver.limit.cores=1 \
+--conf spark.kubernetes.executor.request.cores=1 \
+--conf spark.kubernetes.executor.limit.cores=1 \
+--conf spark.kubernetes.container.image=msbd5003registry.azurecr.io/msbd5003-pyspark:latest \
 --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
 --conf spark.kubernetes.report.interval=10s \
 https://msbd5003storage.blob.core.windows.net/sparkjobs/example.py
-
+# --class org.apache.spark.examples.SparkPi \
+# local:///opt/spark/examples/jars/spark-examples_2.12-3.0.1.jar 10000000
 
 
 # Get all logs
