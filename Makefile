@@ -11,7 +11,6 @@ connect_to_aks:
 # https://towardsdatascience.com/how-to-build-spark-from-source-and-deploy-it-to-a-kubernetes-cluster-in-60-minutes-225829b744f9
 # git clone https://github.com/apache/spark.git --branch v3.0.1
 build_spark_image_for_aks:
-	sudo chmod +x -R spark_cluster/jobs
 	# spark image
 	spark/bin/docker-image-tool.sh -r spark-on-k8s -t v3.0.1 build
 	# pyspack support
@@ -31,7 +30,7 @@ submit_example_pyspark_job:
 	
 	# delete previous pod
 	# kubectl delete pods example-driver
-	
+
 	# spark submit
 	spark/bin/spark-submit \
 	--master k8s://https://msbd5003-aks-dns-1ede652a.hcp.eastus.azmk8s.io:443 \
@@ -59,27 +58,27 @@ submit_example_pyspark_job:
 	kubectl logs example-driver | grep "INFO __main__:"
 
 ## Start of Airflos
-# https://docs.bitnami.com/tutorials/deploy-apache-airflow-azure-postgresql-redis/
-deploy_airflow:
-	helm repo add bitnami https://charts.bitnami.com/bitnami
-	helm upgrade airflow-aks bitnami/airflow \
-	--set airflow.loadExamples=false \
-	--set airflow.baseUrl=http://msbd5003 \
-	--set postgresql.enabled=false \
-	--set redis.enabled=false \
-	--set externalDatabase.host=msbd5003-postgres.postgres.database.azure.com \
-	--set externalDatabase.user=msbd5003@msbd5003-postgres \
-	--set externalDatabase.database=airflow \
-	--set externalDatabase.existingSecret=airflow-secrets \
-	--set externalDatabase.port=5432 \
-	--set externalRedis.host=msbd5003-redis.redis.cache.windows.net \
-	--set externalRedis.port=6379 \
-	--set externalRedis.existingSecret=airflow-secrets \
-	--set airflow.auth.existingSecret=airflow-secrets
 
+build_airflow_image_for_aks:
+	# airflow image
+	docker build --no-cache airflow -t msbd5003-airflow 
+
+push_airflow_image_to_acr: build_airflow_image_for_aks
+	az acr login --name msbd5003registry
+	docker tag msbd5003-airflow:latest msbd5003registry.azurecr.io/msbd5003-airflow:latest
+	docker push msbd5003registry.azurecr.io/msbd5003-airflow:latest
+	az acr repository list --name msbd5003registry --output table
+
+# https://docs.bitnami.com/tutorials/deploy-apache-airflow-azure-postgresql-redis/
+# https://github.com/bitnami/charts/tree/master/bitnami/airflow
+deploy_airflow: push_airflow_image_to_acr
+	helm upgrade airflow-aks airflow-stable/airflow \
+	--values ./airflow/values.yaml
+	kubectl rollout restart deploy airflow-aks
+	# http://40.76.159.174:8080/
 
 proxy_airflow:
-	 kubectl port-forward --namespace default svc/airflow-aks 8091:8080
+	 kubectl port-forward --namespace default svc/airflow-aks-web 8091:8080
 
 ## End of Airflow
 
