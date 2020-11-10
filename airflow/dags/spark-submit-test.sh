@@ -26,3 +26,10 @@ echo "=========================================================="
 
 # Get relavent logs
 kubectl logs example-driver | grep "INFO __main__:"
+
+# Check if the spark job failed or not
+if kubectl get pods example-driver --output="jsonpath={.status.phase}" | grep -q 'Succeeded'; then
+    exit 0
+else
+    exit 1
+fi
