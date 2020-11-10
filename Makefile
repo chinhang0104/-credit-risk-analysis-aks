@@ -72,7 +72,7 @@ push_airflow_image_to_acr: build_airflow_image_for_aks
 # https://docs.bitnami.com/tutorials/deploy-apache-airflow-azure-postgresql-redis/
 # https://github.com/bitnami/charts/tree/master/bitnami/airflow
 deploy_airflow: push_airflow_image_to_acr
-	helm install airflow-aks airflow-stable/airflow \
+	helm upgrade airflow-aks airflow-stable/airflow \
 	--values ./airflow/values.yaml
 	kubectl rollout restart deploy airflow-aks-web
 	kubectl rollout restart deploy airflow-aks-scheduler

@@ -17,7 +17,7 @@ dag = DAG(
     dagrun_timeout=timedelta(minutes=60),
 )
 
-command = "./spark-submit-test.sh "
+command = "/opt/airflow/dags/spark-submit-test.sh "
 
 BashOperator(
     task_id='pi',

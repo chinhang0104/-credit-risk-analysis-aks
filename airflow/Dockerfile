@@ -10,6 +10,9 @@ RUN update-ca-certificates -f \
     git \
     libatlas3-base \
     libopenblas-base \
+    apt-transport-https \
+    gnupg2 \
+    curl \
   && apt-get clean
 
 # java scala
@@ -22,6 +25,11 @@ RUN cd /usr/ \
     && rm spark-3.0.1-bin-hadoop2.7.tgz \
     && mv spark-3.0.1-bin-hadoop2.7 spark
 
+# kubectl
+RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+RUN echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+RUN sudo apt-get update
+RUN sudo apt-get install -y kubectl
 
 ENV SPARK_HOME /usr/spark
 ENV PATH="/usr/spark/bin:${PATH}"

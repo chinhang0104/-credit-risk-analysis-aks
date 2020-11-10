@@ -81,6 +81,8 @@ airflow:
   ##
   config:
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "20"
+    
     
 
   ## extra annotations for the web/scheduler/worker Pods
