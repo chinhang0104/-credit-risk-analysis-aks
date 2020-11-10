@@ -36,7 +36,6 @@ submit_example_pyspark_job:
 	--master k8s://https://msbd5003-aks-dns-1ede652a.hcp.eastus.azmk8s.io:443 \
 	--deploy-mode cluster \
 	--name example \
-	--conf spark.kubernetes.driver.pod.name=example-driver \
 	--conf spark.executor.instances=2 \
 	--conf spark.kubernetes.driver.request.cores=1 \
 	--conf spark.kubernetes.driver.limit.cores=1 \
@@ -60,8 +59,9 @@ submit_example_pyspark_job:
 ## Start of Airflos
 
 build_airflow_image_for_aks:
-	# airflow image
-	docker build --no-cache airflow -t msbd5003-airflow 
+	# airflow image 
+	# --no-cache
+	docker build airflow -t msbd5003-airflow 
 
 push_airflow_image_to_acr: build_airflow_image_for_aks
 	az acr login --name msbd5003registry
@@ -72,10 +72,11 @@ push_airflow_image_to_acr: build_airflow_image_for_aks
 # https://docs.bitnami.com/tutorials/deploy-apache-airflow-azure-postgresql-redis/
 # https://github.com/bitnami/charts/tree/master/bitnami/airflow
 deploy_airflow: push_airflow_image_to_acr
-	helm upgrade airflow-aks airflow-stable/airflow \
+	helm install airflow-aks airflow-stable/airflow \
 	--values ./airflow/values.yaml
-	kubectl rollout restart deploy airflow-aks
-	# http://40.76.159.174:8080/
+	kubectl rollout restart deploy airflow-aks-web
+	kubectl rollout restart deploy airflow-aks-scheduler
+	# http://40.88.192.26:8080/
 
 proxy_airflow:
 	 kubectl port-forward --namespace default svc/airflow-aks-web 8091:8080

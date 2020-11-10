@@ -81,6 +81,7 @@ airflow:
   ##
   config:
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    
 
   ## extra annotations for the web/scheduler/worker Pods
   ##
@@ -140,6 +141,8 @@ airflow:
   extraPipPackages: 
     - "apache-airflow~=1.10.10"
     - "apache-airflow[celery]~=1.10.10"
+    - "pyspark~=3.0.1"
+    - "apache-airflow-backport-providers-apache-spark==2020.10.29"
 
   ## extra volumeMounts for the web/scheduler/worker Pods
   ##
@@ -828,11 +831,11 @@ logs:
   persistence:
     ## if a persistent volume is mounted at `logs.path`
     ##
-    enabled: false
+    enabled: true
 
     ## the name of an existing PVC to use
     ##
-    existingClaim: ""
+    existingClaim: "airflow-logs-pvc"
 
     ## sub-path under `logs.persistence.existingClaim` to use
     ##
@@ -844,7 +847,7 @@ logs:
     ## - if set to "", then `PersistentVolumeClaim/spec.storageClassName` is omitted
     ## - if set to "-", then `PersistentVolumeClaim/spec.storageClassName` is set to ""
     ##
-    storageClass: ""
+    storageClass: "azurefile"
 
     ## the access mode of the PVC
     ##
@@ -1250,14 +1253,14 @@ serviceAccount:
   ## - if false, you must create the service account outside of this helm chart,
   ##   with the name: `serviceAccount.name`
   ##
-  create: true
+  create: false
 
   ## the name of the ServiceAccount
   ##
   ## NOTE:
   ## - by default the name is generated using the `airflow.serviceAccountName` template in `_helpers.tpl`
   ##
-  name: ""
+  name: "spark"
 
   ## annotations for the ServiceAccount
   ##
