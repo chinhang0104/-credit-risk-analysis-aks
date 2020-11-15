@@ -13,6 +13,8 @@ done
 
 
 ## VM in azure
+
+**you need to setup inbound port and outbound port**
 vmdash
 12345678Password
 
