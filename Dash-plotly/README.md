@@ -17,4 +17,13 @@ vmdash
 12345678Password
 
 code server
-http://40.76.26.129:8080/
+You need to manually open the code server with
+```sh
+code-server
+```
+
+to run the dash app
+```sh
+python3 app.py
+```
+
