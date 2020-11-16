@@ -36,11 +36,11 @@ PYSPARK_PYTHON=python3 spark/bin/spark-submit \
     --master spark://msbd5003-spark-0.qkn3qgj4eqmejkxq4udkgnthmd.bx.internal.cloudapp.net:7077 \
 	--name streaming \
 	--packages org.mongodb.spark:mongo-spark-connector_2.12:3.0.0 \
-    --conf $MONGO_IN_URI \
-    --conf $MONGO_OUT_URI \
-	~/streaming.py
+    --conf 'spark.mongodb.input.uri=mongodb://xxx' \
+	--conf 'spark.mongodb.output.uri=mongodb://xxx' \
+    ~/streaming.py
 
-	
+
 
 
 
