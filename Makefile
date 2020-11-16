@@ -9,19 +9,25 @@ connect_to_aks:
 
 # https://spark.apache.org/docs/latest/running-on-kubernetes.html#docker-images
 # https://towardsdatascience.com/how-to-build-spark-from-source-and-deploy-it-to-a-kubernetes-cluster-in-60-minutes-225829b744f9
-# git clone https://github.com/apache/spark.git --branch v3.0.1
+# https://databricks.com/session/apache-spark-on-k8s-best-practice-and-performance-in-the-cloud
+# git clone https://github.com/apache/spark.git --branch v3.0.0
 build_spark_image_for_aks:
 	# spark image
-	spark/bin/docker-image-tool.sh -r spark-on-k8s -t v3.0.1 build
+	spark/bin/docker-image-tool.sh -r spark-on-k8s -t v3.0.0 build
 	# pyspack support
-	spark/bin/docker-image-tool.sh -r pyspark-on-k8s -t v3.0.1 -p spark/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/bindings/python/Dockerfile build
-	docker build spark_cluster -t msbd5003-pyspark
+	spark/bin/docker-image-tool.sh -r pyspark-on-k8s -t v3.0.0 -p spark/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/bindings/python/Dockerfile build
+	docker build spark_cluster/one_time_cluster -t msbd5003-pyspark
+	docker build spark_cluster/streaming_cluster -t msbd5003-pyspark-streaming
 
 
 push_spark_image_to_acr: build_spark_image_for_aks
 	az acr login --name msbd5003registry
 	docker tag msbd5003-pyspark:latest msbd5003registry.azurecr.io/msbd5003-pyspark:latest
+	docker tag msbd5003-pyspark-streaming:latest msbd5003registry.azurecr.io/msbd5003-pyspark-streaming:latest
+
 	docker push msbd5003registry.azurecr.io/msbd5003-pyspark:latest
+	docker push msbd5003registry.azurecr.io/msbd5003-pyspark-streaming:latest
+
 	az acr repository list --name msbd5003registry --output table
 
 submit_example_pyspark_job:
@@ -44,6 +50,7 @@ submit_example_pyspark_job:
 	--conf spark.kubernetes.container.image=msbd5003registry.azurecr.io/msbd5003-pyspark:latest \
 	--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
 	--conf spark.kubernetes.report.interval=10s \
+	--conf spark.kubernetes.local.dirs.tmpfs=true \
 	https://msbd5003storage.blob.core.windows.net/sparkjobs/example.py
 	
 	# Get all logs
@@ -55,6 +62,7 @@ submit_example_pyspark_job:
 
 	# Get relavent logs
 	kubectl logs example-driver | grep "INFO __main__:"
+
 
 ## Start of Airflos
 
@@ -74,23 +82,14 @@ push_airflow_image_to_acr: build_airflow_image_for_aks
 deploy_airflow: push_airflow_image_to_acr
 	helm upgrade airflow-aks airflow-stable/airflow \
 	--values ./airflow/values.yaml
-	kubectl rollout restart deploy airflow-aks-web
-	kubectl rollout restart deploy airflow-aks-scheduler
+
+	# kubectl get pods -n default --no-headers=true | awk '/airflow-aks/{print $1}' | xargs  kubectl rollout restart pods
+	kubectl delete pods airflow-aks-worker-0
+	kubectl delete pods airflow-aks-worker-1
+	kubectl delete pods airflow-aks-worker-2
 	# http://40.88.192.26:8080/
 
 proxy_airflow:
 	 kubectl port-forward --namespace default svc/airflow-aks-web 8091:8080
 
 ## End of Airflow
-
-# airflow submits pyspark job:
-# https://campus.datacamp.com/courses/building-data-engineering-pipelines-in-python/managing-and-orchestrating-a-workflow?ex=8
-
-# hbase cluster
-# https://cloud.google.com/blog/products/databases/to-run-or-not-to-run-a-database-on-kubernetes-what-to-consider
-
-# spark streaming
-# https://stackoverflow.com/questions/54785519/using-airflow-to-run-spark-streaming-jobs
-# figure out how to have spark streaming in production
-
-# kubectl delete pods --field-selector status.phase=Failed

@@ -12,7 +12,7 @@ args = {
 dag = DAG(
     dag_id='spark_submit_test',
     default_args=args,
-    schedule_interval='0 0 * * *',
+    schedule_interval='@hourly',
     start_date=days_ago(0),
     dagrun_timeout=timedelta(minutes=60),
 )
