@@ -102,5 +102,3 @@ ENV/
 
 secrets/
 spark/
-
-spark_cluster/streaming_cluster/

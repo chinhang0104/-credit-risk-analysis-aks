@@ -17,16 +17,12 @@ build_spark_image_for_aks:
 	# pyspack support
 	spark/bin/docker-image-tool.sh -r pyspark-on-k8s -t v3.0.0 -p spark/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/bindings/python/Dockerfile build
 	docker build spark_cluster/one_time_cluster -t msbd5003-pyspark
-	docker build spark_cluster/streaming_cluster -t msbd5003-pyspark-streaming
 
 
 push_spark_image_to_acr: build_spark_image_for_aks
 	az acr login --name msbd5003registry
 	docker tag msbd5003-pyspark:latest msbd5003registry.azurecr.io/msbd5003-pyspark:latest
-	docker tag msbd5003-pyspark-streaming:latest msbd5003registry.azurecr.io/msbd5003-pyspark-streaming:latest
-
 	docker push msbd5003registry.azurecr.io/msbd5003-pyspark:latest
-	docker push msbd5003registry.azurecr.io/msbd5003-pyspark-streaming:latest
 
 	az acr repository list --name msbd5003registry --output table
 
