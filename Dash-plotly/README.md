@@ -2,7 +2,7 @@
 
 # develop with Colab
 https://colab.research.google.com/drive/1P05ur8CY8C1gRPLtMypekWlN0xd2pjOb?usp=sharing
-
+Dash-on-colab: https://colab.research.google.com/drive/1vpGKW9qipLRnIqjA6bZYsagljstNjMEw?usp=sharing
 
 https://dash.plotly.com/
 
