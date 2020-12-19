@@ -30,6 +30,9 @@ mv "hadoop-2.9.2" "hadoop"
 ....
 
 # spark submit
+JAVA_HOME=/usr/ \
+PYSPARK_DRIVER_PYTHON="python3" \
+PYSPARK_DRIVER_PYTHON_OPTS="" \
 HADOOP_HOME=$HOME/hadoop \
 LD_LIBRARY_PATH=$HOME/hadoop/lib/native:$LD_LIBRARY_PATH \
 PYSPARK_PYTHON=python3 spark/bin/spark-submit \

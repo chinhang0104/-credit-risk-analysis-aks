@@ -7,9 +7,9 @@ from datetime import datetime
 
 
 def _push(collection_name, df):
-    
+    df.cache()
     logger.warn(f"Pushing {df.count()} {collection_name} to db")
-    
+
     start = datetime.now()
 
     df.write.format("mongo").mode("append").option("database", "credit").option("collection", collection_name).save()
@@ -25,29 +25,31 @@ def _handle_jsons(rdd):
     
     # classify
     applications = df.filter(df["type"]=="application")
-    prev_applications = df.filter(df["type"]=="previous_application")
-    installments = df.filter(df["type"]=="installments")
-    
+    applications.cache()
+    prev_applications = df.filter(df["type"]=="prev_application")
+    prev_applications.cache()
+    installments = df.filter(df["type"]=="installment")
+    installments.cache()
+
     start = datetime.now()
     logger.warn(f"Recieved {df.count()} records at {start}")
     
-    if installments.count() > 0:
-        df = installments.select("data").rdd.flatMap(lambda x:x).toDF(sampleRatio=0.01) 
-        df = df.withColumn('_id', sf.concat(sf.col('SK_ID_PREV'), sf.lit('-'),
-                                            sf.col('NUM_INSTALMENT_VERSION'), sf.lit('-'),
-                                            sf.col('NUM_INSTALMENT_NUMBER')))
-        _push("installment", df)
+    _df = installments.select("data").rdd.flatMap(lambda x:x).toDF(sampleRatio=0.01) 
+    _df = _df.withColumn('_id', sf.concat(
+                                        sf.col('SK_ID_PREV'), sf.lit('-'),
+                                        sf.col('NUM_INSTALMENT_VERSION'), sf.lit('-'),
+                                        sf.col('NUM_INSTALMENT_NUMBER'))
+                                        )
+    _push("installment", _df)
        
     
-    if prev_applications.count() > 0:
-        df = prev_applications.select("data").rdd.flatMap(lambda x:x).toDF(sampleRatio=0.3) 
-        df = df.withColumn('_id', df["SK_ID_PREV"])
-        _push("prev_application", df)
+    _df = prev_applications.select("data").rdd.flatMap(lambda x:x).toDF(sampleRatio=0.1) 
+    _df = _df.withColumn('_id', _df["SK_ID_PREV"])
+    _push("prev_application", _df)
     
-    if applications.count() > 0:
-        df = applications.select("data").rdd.flatMap(lambda x:x).toDF(sampleRatio=0.3) 
-        df = df.withColumn('_id', df["SK_ID_CURR"])
-        _push("application", df)
+    _df = applications.select("data").rdd.flatMap(lambda x:x).toDF(sampleRatio=0.1) 
+    _df = _df.withColumn('_id', _df["SK_ID_CURR"])
+    _push("application", _df)
     
     end = datetime.now()
     spent = (end - start).total_seconds()
@@ -77,7 +79,7 @@ logger.warn("Started")
 rddQueue = rdd.randomSplit([1.0]*1000, 123)
         
 # Create a StreamingContext with batch interval of 5 seconds
-ssc = StreamingContext(sc, 10)
+ssc = StreamingContext(sc, 60)
 
 # Feed the rdd queue to a DStream
 lines = ssc.queueStream(rddQueue)

@@ -10,17 +10,17 @@ args = {
 }
 
 dag = DAG(
-    dag_id='spark_submit_test',
+    dag_id='training',
     default_args=args,
-    schedule_interval='@hourly',
+    schedule_interval='@daily',
     start_date=days_ago(0),
     dagrun_timeout=timedelta(minutes=60),
 )
 
-command = "/opt/airflow/dags/spark-submit-test.sh "
+command = "/opt/airflow/dags/spark-submit.sh "
 
 BashOperator(
-    task_id='pi',
+    task_id='credit',
     bash_command=command,
     dag=dag,
 )

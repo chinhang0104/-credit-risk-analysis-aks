@@ -13,51 +13,44 @@ connect_to_aks:
 # git clone https://github.com/apache/spark.git --branch v3.0.0
 build_spark_image_for_aks:
 	# spark image
-	spark/bin/docker-image-tool.sh -r spark-on-k8s -t v3.0.0 build
+	# spark/bin/docker-image-tool.sh -r spark-on-k8s -t v3.0.0  build
 	# pyspack support
-	spark/bin/docker-image-tool.sh -r pyspark-on-k8s -t v3.0.0 -p spark/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/bindings/python/Dockerfile build
-	docker build spark_cluster/one_time_cluster -t msbd5003-pyspark
-
+	/opt/spark/bin/docker-image-tool.sh -r pyspark-on-k8s -t v3.0.0 -p /opt/spark/kubernetes/dockerfiles/spark/bindings/python/Dockerfile build
 
 push_spark_image_to_acr: build_spark_image_for_aks
 	az acr login --name msbd5003registry
-	docker tag msbd5003-pyspark:latest msbd5003registry.azurecr.io/msbd5003-pyspark:latest
-	docker push msbd5003registry.azurecr.io/msbd5003-pyspark:latest
-
+	docker tag pyspark-on-k8s/spark-py:v3.0.0 msbd5003registry.azurecr.io/msbd5003-pyspark-2:1.0.2
+	docker push msbd5003registry.azurecr.io/msbd5003-pyspark-2:1.0.2
 	az acr repository list --name msbd5003registry --output table
 
 submit_example_pyspark_job:
 	# upload the spark job file to azure storage
-	az storage blob upload --account-name msbd5003storage --container-name sparkjobs --file spark_cluster/jobs/example.py --name example.py
-	
-	# delete previous pod
-	# kubectl delete pods example-driver
+	az storage blob upload --account-name msbd5003storage --container-name sparkjobs --file spark_cluster/jobs/training.py --name training.py
 
 	# spark submit
 	spark/bin/spark-submit \
 	--master k8s://https://msbd5003-aks-dns-1ede652a.hcp.eastus.azmk8s.io:443 \
 	--deploy-mode cluster \
-	--name example \
-	--conf spark.executor.instances=2 \
-	--conf spark.kubernetes.driver.request.cores=1 \
-	--conf spark.kubernetes.driver.limit.cores=1 \
-	--conf spark.kubernetes.executor.request.cores=1 \
-	--conf spark.kubernetes.executor.limit.cores=1 \
-	--conf spark.kubernetes.container.image=msbd5003registry.azurecr.io/msbd5003-pyspark:latest \
+	--name credit \
+	--conf spark.executor.instances=4 \
+	--conf spark.kubernetes.driver.request.cores=1.2 \
+	--conf spark.kubernetes.driver.limit.cores=1.2 \
+	--conf spark.kubernetes.executor.request.cores=1.2 \
+	--conf spark.kubernetes.executor.limit.cores=1.2 \
+	--conf spark.kubernetes.container.image=msbd5003registry.azurecr.io/msbd5003-pyspark-2:1.0.2 \
 	--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
 	--conf spark.kubernetes.report.interval=10s \
-	--conf spark.kubernetes.local.dirs.tmpfs=true \
-	https://msbd5003storage.blob.core.windows.net/sparkjobs/example.py
+	https://msbd5003storage.blob.core.windows.net/sparkjobs/training.py
 	
 	# Get all logs
-	kubectl logs example-driver
+	kubectl logs credit-driver
 
 	echo "=========================================================="
 	echo "Relavent Logs:"
 	echo "=========================================================="
 
 	# Get relavent logs
-	kubectl logs example-driver | grep "INFO __main__:"
+	kubectl logs credit-driver | grep "INFO __main__:"
 
 
 ## Start of Airflos
@@ -69,8 +62,8 @@ build_airflow_image_for_aks:
 
 push_airflow_image_to_acr: build_airflow_image_for_aks
 	az acr login --name msbd5003registry
-	docker tag msbd5003-airflow:latest msbd5003registry.azurecr.io/msbd5003-airflow:latest
-	docker push msbd5003registry.azurecr.io/msbd5003-airflow:latest
+	docker tag msbd5003-airflow:latest msbd5003registry.azurecr.io/msbd5003-airflow:1.0.1
+	docker push msbd5003registry.azurecr.io/msbd5003-airflow:1.0.1
 	az acr repository list --name msbd5003registry --output table
 
 # https://docs.bitnami.com/tutorials/deploy-apache-airflow-azure-postgresql-redis/
@@ -89,3 +82,10 @@ proxy_airflow:
 	 kubectl port-forward --namespace default svc/airflow-aks-web 8091:8080
 
 ## End of Airflow
+
+
+# Read data from mongo db
+https://docs.microsoft.com/en-us/azure/cosmos-db/tutorial-query-mongodb
+
+
+# kubectl get pods -n default --no-headers=true | awk '/credit/{print $1}' | xargs  kubectl delete -n default pod

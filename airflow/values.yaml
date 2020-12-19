@@ -6,7 +6,7 @@ airflow:
   ##
   image:
     repository: msbd5003registry.azurecr.io/msbd5003-airflow
-    tag: latest
+    tag: 1.0.1
     ## values: Always or IfNotPresent
     pullPolicy: Always
     pullSecret: ""
@@ -82,8 +82,6 @@ airflow:
   config:
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "20"
-    
-    
 
   ## extra annotations for the web/scheduler/worker Pods
   ##
@@ -140,7 +138,7 @@ airflow:
   ##   extraPipPackages:
   ##     - "airflow-exporter==1.3.1"
   ##
-  extraPipPackages: 
+  extraPipPackages:
     - "apache-airflow~=1.10.10"
     - "apache-airflow[celery]~=1.10.10"
     - "pyspark~=3.0.1"
@@ -163,7 +161,6 @@ airflow:
   ##       emptyDir: {}
   ##
   extraVolumes: []
-
 
 ###################################
 # Airflow - Scheduler Configs
@@ -1466,7 +1463,7 @@ redis:
       ## the access mode of the PVC
       ##
       accessModes:
-      - ReadWriteOnce
+        - ReadWriteOnce
 
       ## the size of PVC to request
       ##
