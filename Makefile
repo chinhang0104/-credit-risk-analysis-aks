@@ -33,6 +33,7 @@ submit_example_pyspark_job:
 	--deploy-mode cluster \
 	--name credit \
 	--conf spark.executor.instances=4 \
+	--conf spark.kubernetes.driver.pod.name=credit-driver \
 	--conf spark.kubernetes.driver.request.cores=1.2 \
 	--conf spark.kubernetes.driver.limit.cores=1.2 \
 	--conf spark.kubernetes.executor.request.cores=1.2 \

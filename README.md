@@ -29,3 +29,5 @@ Data Source: https://www.kaggle.com/c/home-credit-default-risk/data
 
 - trainging.py: it is the daily Airflow DAB definition file.
 - spart-submit.sh: it is the script for submitting spark job from Airflow.
+
+7. Dash-plotly: it contains the code for setting up the visualization server.

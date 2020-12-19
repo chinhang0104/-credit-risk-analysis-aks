@@ -145,38 +145,34 @@ logger.info("GBTClassifier AUC:" +str(auc))
 
 w_0 = [1/3,1/3,1/3]
 w_1 = [0.2, 0.2, 0.6]
-w_2 = [0.1, 0.1, 0.8]
-w_3 = [0.05, 0.05, 0.9]
+w_2 = [0.6, 0.2, 0.2]
+w_3 = [0.2, 0.6, 0.2]
 
-evaluator = BinaryClassificationEvaluator(labelCol="indexedLabel", rawPredictionCol="rawPrediction", metricName="areaUnderROC")
-auc_rf = evaluator.evaluate(predictions_rf)
-auc_lr = evaluator.evaluate(predictions_lr)
-auc_gbt = evaluator.evaluate(predictions_gbt)
-# logger.info("auc = " +str(auc_rf))
-# logger.info("auc = " +str(auc_lr))
-# logger.info("auc = " +str(auc_gbt))
-logger.info("==================")
-# to pd df to do weighting computation
-rf_pd = predictions_rf.toPandas()
-lr_pd = predictions_lr.toPandas()
-gbt_pd = predictions_gbt.toPandas()
+
+rf_probability = predictions_rf.select("probability", "indexedLabel").rdd.zipWithIndex().map(lambda x: (x[1], (x[0].probability.values[1], x[0].indexedLabel))).cache()
+lr_probability = predictions_lr.select("probability", "indexedLabel").rdd.zipWithIndex().map(lambda x: (x[1], (x[0].probability.values[1], x[0].indexedLabel))).cache()
+gbt_probability = predictions_gbt.select("probability", "indexedLabel").rdd.zipWithIndex().map(lambda x: (x[1], (x[0].probability.values[1], x[0].indexedLabel))).cache()
+
+logger.info(rf_probability.take(2))
+
+joined = rf_probability.join(lr_probability).map(lambda x: (x[0], (x[1][0][0], x[1][1][0], x[1][0][1]))).cache()
+joined = joined.join(gbt_probability).map(lambda x: (x[0], (x[1][0][0], x[1][0][1], x[1][1][0], x[1][1][1]))).cache()
+
+
+
+def f(x):
+  d = {
+      "index": x[0],
+      "probability": float(x[1]),
+       "label": float(x[2]),
+  }
+  return d
+    
 
 for w in [w_0, w_1, w_2, w_3]:
-  rf_pd['probability'] = rf_pd['probability'] * w[0]
-  lr_pd['probability'] = lr_pd['probability'] * w[1]
-  gbt_pd['probability'] = gbt_pd['probability'] * w[2]
-
-
-  rf_pd = rf_pd[['SK_ID_CURR','indexedLabel','probability']]
-  lr_pd = lr_pd[['SK_ID_CURR','indexedLabel','probability']]
-  gbt_pd = gbt_pd[['SK_ID_CURR','indexedLabel','probability']]
-  ensembled_pd = rf_pd.merge(lr_pd, on='SK_ID_CURR', how='left')
-  ensembled_pd = ensembled_pd.merge(gbt_pd, on='SK_ID_CURR', how='left')
-  ensembled_pd['probability'] = ensembled_pd['probability_x']+ensembled_pd['probability_y']+ensembled_pd['probability']
-
-  ensembled_pd = ensembled_pd[['indexedLabel', 'probability']]
-  ensembled = spark.createDataFrame(ensembled_pd)
-  evaluator = BinaryClassificationEvaluator(labelCol="indexedLabel", rawPredictionCol="probability", metricName="areaUnderROC")
-  auc_ensemble = evaluator.evaluate(ensembled)
+  ensemble = joined.map(lambda x: (x[0], x[1][0] * w[0] + x[1][1] * w[1] + x[1][2] * w[2], x[1][3]))
+  ensemble_df = ensemble.map(lambda x: Row(**f(x))).toDF()
+  evaluator = BinaryClassificationEvaluator(labelCol="label", rawPredictionCol="probability", metricName="areaUnderROC")
+  auc_ensemble = evaluator.evaluate(ensemble_df)
   logger.info(w)
   logger.info("auc = " +str(auc_ensemble))
